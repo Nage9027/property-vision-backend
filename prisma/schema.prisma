@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider             = "postgresql"
+  url                  = env("DATABASE_URL")
+}
+
+enum Role {
+  GUEST
+  USER
+  ADMIN
+}
+
+enum PropertyStatus {
+  DRAFT
+  PUBLISHED
+  SOLD
+  RENTED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CLOSED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Property {
+  id             String          @id @default(cuid())
+  title          String
+  slug           String          @unique
+  city           String
+  locality       String?
+  address        String?
+  price          Decimal?
+  propertyType   String?
+  status         PropertyStatus  @default(DRAFT)
+  description    String?
+  featured       Boolean         @default(false)
+  bedrooms       Int?
+  bathrooms      Int?
+  area           Int?
+  possessionStatus String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  media          PropertyMedia[]
+  amenities      Amenity[]
+  featuredInHero PropertyPageHero?
+
+  // Homepage Hero Fields
+  isHomepageHero    Boolean   @default(false)
+  heroTitle         String?
+  heroSubtitle      String?
+  heroDescription   String?
+  heroVideoUrl      String?
+  heroImageUrl      String?
+  startingPrice     String?
+  priceUnit         String?
+  offerBadge        String?
+  priceHighlight    String?
+  district          String?
+  state             String?
+  googleMapUrl      String?
+  landmark          String?
+  totalPlots        String?
+  availableUnits    String?
+  distanceToORR     String?
+  internalRoadWidth String?
+  btn1Label         String?
+  btn1Type          String?
+  btn1Url           String?
+  btn2Label         String?
+  btn2Type          String?
+  btn2Url           String?
+  btn3Label         String?
+  btn3Type          String?
+  btn3Url           String?
+  whatsappNumber    String?
+  phoneNumber       String?
+  metaTitle         String?
+  metaDescription   String?
+  ogImageUrl        String?
+  keywords          String?
+  homepageStatus    String?   @default("DRAFT")
+
+  @@map("properties")
+}
+
+model PropertyPageHero {
+  id               String    @id @default(cuid())
+  headline         String
+  subheadline      String
+  videoUrl         String?
+  bannerImageUrl   String?
+  ctaLabel         String?
+  ctaHref          String?
+  featuredPropertyId String?  @unique
+  featuredProperty Property?  @relation(fields: [featuredPropertyId], references: [id], onDelete: SetNull)
+  updatedAt        DateTime   @updatedAt
+  createdAt        DateTime   @default(now())
+
+  @@map("property_page_hero")
+}
+
+model PropertyMedia {
+  id         String   @id @default(cuid())
+  propertyId String
+  type       String
+  url        String
+  caption    String?
+  sortOrder  Int      @default(0)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_media")
+}
+
+model Amenity {
+  id         String   @id @default(cuid())
+  propertyId String
+  name       String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("amenities")
+}
+
+model Lead {
+  id           String     @id @default(cuid())
+  name         String
+  phone        String
+  email        String
+  requirement  String?
+  budget       String?
+  whatsappOptIn Boolean   @default(false)
+  sourcePage   String?
+  status       LeadStatus @default(NEW)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("leads")
+}
+
+model PromotionalBanner {
+  id            String    @id @default(cuid())
+  title         String?
+  subtitle      String?
+  offerText     String?
+  price         String?
+  location      String?
+  phone         String?
+  whatsapp      String?
+  ctaText       String?
+  ctaUrl        String?
+  propertyUrl   String?
+  bannerImage   String?
+  bannerVideo   String?
+  popupType     String    @default("CENTER_MODAL")
+  animationType String    @default("FADE")
+  position      String    @default("center")
+  enableBlur    Boolean   @default(true)
+  autoOpen      Boolean   @default(true)
+  delayMs       Int       @default(2000)
+  isActive      Boolean   @default(false)
+  priority      Int       @default(0)
+  startDate     DateTime?
+  endDate       DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("promotional_banners")
+}
+
+model PageVisit {
+  id        String   @id @default(cuid())
+  path      String
+  userId    String?
+  referrer  String?
+  createdAt DateTime @default(now())
+
+  @@map("page_visits")
+}
+
+model ContactSubmission {
+  id               String   @id @default(cuid())
+  name             String
+  email            String
+  phone            String
+  message          String   @default("")
+  propertyInterest String?
+  userId           String?
+  createdAt        DateTime @default(now())
+
+  @@map("contact_submissions")
+}
