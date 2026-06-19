@@ -1,0 +1,10 @@
+{
+  "name": "Property Vision Launchpad",
+  "short_name": "Property Vision",
+  "description": "Property Vision Launchpad marketing site",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#081120",
+  "theme_color": "#0a2540"
+}

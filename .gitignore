@@ -1,5 +1,14 @@
 node_modules/
 dist/
 .env
+<<<<<<< HEAD
 logs/
 uploads/
+=======
+*.local
+.DS_Store
+*.mp4
+*.MP4
+*.mov
+*.MOV
+>>>>>>> 52953c3e0a8e365a36d252765940e53a9493eb0e
