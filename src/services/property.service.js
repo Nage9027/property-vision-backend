@@ -71,6 +71,20 @@ function serializeProperty(property) {
     ogImageUrl: property.ogImageUrl,
     keywords: property.keywords,
     homepageStatus: property.homepageStatus,
+
+    // Dynamic page content
+    investmentOverview: property.investmentOverview,
+    expectedROI: property.expectedROI,
+    investmentBenefits: property.investmentBenefits,
+    locationAdvantages: property.locationAdvantages,
+    testimonials: property.testimonials,
+    faqs: property.faqs,
+    siteVisitBenefits: property.siteVisitBenefits,
+    contactInformation: property.contactInformation,
+    footerInformation: property.footerInformation,
+    customSections: property.customSections,
+    seoTitle: property.seoTitle,
+    seoDescription: property.seoDescription,
   };
 }
 
@@ -167,6 +181,10 @@ function buildUpdateData(input) {
     'btn2Label', 'btn2Type', 'btn2Url', 'btn3Label', 'btn3Type', 'btn3Url',
     'whatsappNumber', 'phoneNumber', 'metaTitle', 'metaDescription',
     'ogImageUrl', 'keywords', 'homepageStatus',
+    'investmentOverview', 'expectedROI', 'investmentBenefits',
+    'locationAdvantages', 'testimonials', 'faqs', 'siteVisitBenefits',
+    'contactInformation', 'footerInformation', 'customSections',
+    'seoTitle', 'seoDescription',
   ];
 
   for (const key of fields) {
@@ -226,7 +244,7 @@ export async function createProperty(input) {
 
     await replaceCollections(tx, created.id, input.media, input.amenities);
     return buildPropertyRecord(created.id, tx);
-  });
+  }, { timeout: 30000 });
 
   if (!property) throw new Error('Failed to create property.');
   return serializeProperty(property);
@@ -248,7 +266,7 @@ export async function updateProperty(identifier, input) {
 
     await replaceCollections(tx, existing.id, input.media, input.amenities);
     return buildPropertyRecord(existing.id, tx);
-  });
+  }, { timeout: 30000 });
 
   return property ? serializeProperty(property) : null;
 }

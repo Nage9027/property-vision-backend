@@ -64,7 +64,22 @@ const baseCreateSchema = z.object({
   amenities: z.array(z.string().min(1)).optional(),
 });
 
-export const propertyCreateSchema = baseCreateSchema.extend(homepageHeroFields);
+const dynamicPageFields = {
+  investmentOverview: z.any().optional().nullable(),
+  expectedROI: z.string().optional().nullable(),
+  investmentBenefits: z.array(z.any()).optional().nullable(),
+  locationAdvantages: z.array(z.any()).optional().nullable(),
+  testimonials: z.array(z.any()).optional().nullable(),
+  faqs: z.array(z.any()).optional().nullable(),
+  siteVisitBenefits: z.array(z.any()).optional().nullable(),
+  contactInformation: z.any().optional().nullable(),
+  footerInformation: z.any().optional().nullable(),
+  customSections: z.array(z.any()).optional().nullable(),
+  seoTitle: z.string().optional().nullable(),
+  seoDescription: z.string().optional().nullable(),
+};
+
+export const propertyCreateSchema = baseCreateSchema.extend(homepageHeroFields).extend(dynamicPageFields);
 export const propertyUpdateSchema = propertyCreateSchema.partial();
 
 export const heroSetSchema = z.object({

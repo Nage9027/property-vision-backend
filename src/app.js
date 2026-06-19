@@ -17,6 +17,7 @@ import { homepageRoutes } from './routes/homepage.routes.js';
 import { bannerRoutes } from './routes/banner.routes.js';
 import { pageVisitRoutes } from './routes/page-visit.routes.js';
 import { contactSubmissionRoutes } from './routes/contact-submission.routes.js';
+import { plotRoutes } from './routes/plot.routes.js';
 import { errorMiddleware, notFoundMiddleware } from './middleware/error.middleware.js';
 
 export const app = express();
@@ -64,6 +65,7 @@ app.use('/api/homepage', homepageRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/page-visits', pageVisitRoutes);
 app.use('/api/contact-submissions', contactSubmissionRoutes);
+app.use('/api/plots', plotRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);

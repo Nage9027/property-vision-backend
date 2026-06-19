@@ -60,6 +60,7 @@ model Property {
   updatedAt      DateTime        @updatedAt
   media          PropertyMedia[]
   amenities      Amenity[]
+  plots          Plot[]
   featuredInHero PropertyPageHero?
 
   // Homepage Hero Fields
@@ -98,6 +99,20 @@ model Property {
   keywords          String?
   homepageStatus    String?   @default("DRAFT")
 
+  // Dynamic page content (JSON)
+  investmentOverview  Json?
+  expectedROI        String?
+  investmentBenefits  Json?
+  locationAdvantages  Json?
+  testimonials        Json?
+  faqs                Json?
+  siteVisitBenefits   Json?
+  contactInformation  Json?
+  footerInformation   Json?
+  customSections      Json?
+  seoTitle            String?
+  seoDescription      String?
+
   @@map("properties")
 }
 
@@ -127,6 +142,39 @@ model PropertyMedia {
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@map("property_media")
+}
+
+enum PlotStatus {
+  AVAILABLE
+  SOLD
+  RESERVED
+}
+
+enum Facing {
+  EAST
+  WEST
+  NORTH
+  SOUTH
+}
+
+model Plot {
+  id                String     @id @default(cuid())
+  propertyId        String
+  plotNumber        String
+  facing            Facing
+  sizeSqYds         Float
+  roadWidth         String?
+  status            PlotStatus @default(AVAILABLE)
+  pricePerSqYd      Decimal?
+  isCorner          Boolean    @default(false)
+  isCommercialFacing Boolean   @default(false)
+  isParkFacing      Boolean    @default(false)
+  features          String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  property          Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("plots")
 }
 
 model Amenity {

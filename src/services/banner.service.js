@@ -69,18 +69,13 @@ export async function ensureSeedBanner() {
   const existing = await database.promotionalBanner.findFirst({ where: { isActive: true } });
   if (existing) return existing;
 
-  const count = await database.promotionalBanner.count();
-  if (count > 0) return null;
-
-  return database.promotionalBanner.create({
+  const banner = await database.promotionalBanner.create({
     data: {
-      title: '🏡 Luxury Plots Available Now',
+      title: 'Luxury Plots Available Now',
       subtitle: 'Premium CRDA-approved plotted development with world-class amenities.',
       offerText: 'Limited Period Offer',
       price: '₹4,200 / Sq.Yd',
       location: 'Edara, Andhra Pradesh',
-      ctaText: 'Explore Properties',
-      ctaUrl: '/properties',
       bannerImage: '',
       popupType: 'CENTER_MODAL',
       animationType: 'SCALE',
@@ -88,7 +83,10 @@ export async function ensureSeedBanner() {
       priority: 0,
       enableBlur: true,
       autoOpen: true,
-      delayMs: 3000,
+      delayMs: 1000,
     },
   });
+
+  console.log('🌱 Seeded promotional banner:', banner.id);
+  return banner;
 }
