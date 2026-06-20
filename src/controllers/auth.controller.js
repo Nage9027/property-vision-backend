@@ -2,6 +2,9 @@ import { getCurrentUser, loginUser, refreshSession, registerUser } from '../serv
 
 export async function login(req, res, next) {
   try {
+    if (!req.body || !req.body.email || !req.body.password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required.' });
+    }
     const data = await loginUser(req.body);
     res.json({ success: true, data });
   } catch (error) {
@@ -20,6 +23,9 @@ export async function register(req, res, next) {
 
 export async function refresh(req, res, next) {
   try {
+    if (!req.body || !req.body.refreshToken) {
+      return res.status(400).json({ success: false, message: 'refreshToken is required.' });
+    }
     const data = await refreshSession(req.body.refreshToken);
     res.json({ success: true, data });
   } catch (error) {

@@ -4,17 +4,25 @@ import { env } from './config/env.js';
 import { ensureSeedAdmin } from './services/auth.service.js';
 import { ensureSeedBanner } from './services/banner.service.js';
 
-const server = createServer(app);
+async function start() {
+  try {
+    await ensureSeedAdmin();
+    console.log('[SEED] Admin user verified/created');
+  } catch (err) {
+    console.error('[SEED] Admin seed failed — login will fail until users table exists:', err instanceof Error ? err.message : String(err));
+  }
 
-Promise.all([ensureSeedAdmin(), ensureSeedBanner()])
-  .then(() => {
-    server.listen(env.PORT, () => {
-      console.log(`Backend listening on port ${env.PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('Failed to seed:', err);
-    server.listen(env.PORT, () => {
-      console.log(`Backend listening on port ${env.PORT} (seed failed)`);
-    });
+  try {
+    await ensureSeedBanner();
+    console.log('[SEED] Banner seed verified/created');
+  } catch (err) {
+    console.error('[SEED] Banner seed failed:', err instanceof Error ? err.message : String(err));
+  }
+
+  const server = createServer(app);
+  server.listen(env.PORT, () => {
+    console.log(`Backend listening on port ${env.PORT}`);
   });
+}
+
+start();

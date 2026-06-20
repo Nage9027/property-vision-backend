@@ -24,8 +24,16 @@ function createSession(user) {
     name: user.name,
   };
 
-  const accessToken = signAccessToken(payload);
-  const refreshToken = signRefreshToken(payload);
+  let accessToken, refreshToken;
+  try {
+    accessToken = signAccessToken(payload);
+    refreshToken = signRefreshToken(payload);
+  } catch (err) {
+    console.error('[AUTH] JWT signing failed:', err instanceof Error ? err.message : String(err));
+    const error = new Error('Authentication service error — JWT secret may be misconfigured.');
+    error.status = 500;
+    throw error;
+  }
 
   return {
     accessToken,
@@ -59,7 +67,16 @@ export async function registerUser(input) {
 
 export async function loginUser(input) {
   const email = input.email.trim().toLowerCase();
-  const user = await database.user.findUnique({ where: { email } });
+  let user;
+  try {
+    user = await database.user.findUnique({ where: { email } });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[AUTH] Database error during login:', msg);
+    const error = new Error(`Database error — ${msg}. Verify that the users table exists and Prisma schema is up to date.`);
+    error.status = 500;
+    throw error;
+  }
   if (!user || !verifyPassword(input.password, user.passwordHash)) {
     const error = new Error('Invalid email or password.');
     error.status = 401;
@@ -76,8 +93,26 @@ export async function getCurrentUser(userId) {
 }
 
 export async function refreshSession(refreshToken) {
-  const payload = verifyRefreshToken(refreshToken);
-  const user = await database.user.findUnique({ where: { id: payload.sub } });
+  let payload;
+  try {
+    payload = verifyRefreshToken(refreshToken);
+  } catch (err) {
+    console.error('[AUTH] Refresh token verification failed:', err instanceof Error ? err.message : String(err));
+    const error = new Error('Invalid or expired refresh token.');
+    error.status = 401;
+    throw error;
+  }
+
+  let user;
+  try {
+    user = await database.user.findUnique({ where: { id: payload.sub } });
+  } catch (err) {
+    console.error('[AUTH] Database error during refresh:', err instanceof Error ? err.message : String(err));
+    const error = new Error(`Database error — ${err instanceof Error ? err.message : String(err)}`);
+    error.status = 500;
+    throw error;
+  }
+
   if (!user) {
     const error = new Error('Invalid refresh token.');
     error.status = 401;
@@ -88,16 +123,25 @@ export async function refreshSession(refreshToken) {
 
 export async function ensureSeedAdmin() {
   const email = 'admin@propertyvision.com';
-  const existing = await database.user.findUnique({ where: { email } });
+  let existing;
+  try {
+    existing = await database.user.findUnique({ where: { email } });
+  } catch (err) {
+    throw new Error(`Cannot query users table — ${err instanceof Error ? err.message : String(err)}`);
+  }
   if (existing) return existing;
 
-  return database.user.create({
-    data: {
-      name: 'Property Vision Admin',
-      email,
-      phone: null,
-      passwordHash: hashPassword('Admin@12345'),
-      role: 'ADMIN',
-    },
-  });
+  try {
+    return await database.user.create({
+      data: {
+        name: 'Property Vision Admin',
+        email,
+        phone: null,
+        passwordHash: hashPassword('Admin@12345'),
+        role: 'ADMIN',
+      },
+    });
+  } catch (err) {
+    throw new Error(`Cannot create admin user — ${err instanceof Error ? err.message : String(err)}`);
+  }
 }

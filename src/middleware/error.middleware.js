@@ -5,6 +5,8 @@ export function notFoundMiddleware(_req, res) {
 export function errorMiddleware(error, _req, res, _next) {
   if (res.headersSent) return;
 
+  console.error('[ERROR]', error instanceof Error ? error.stack || error.message : String(error));
+
   if (typeof error === 'object' && error !== null && 'status' in error && 'message' in error) {
     const typed = error;
     return res.status(typed.status ?? 500).json({ success: false, message: typed.message ?? 'Server error.' });

@@ -4,13 +4,28 @@ import { database } from '../config/database.js';
 
 export async function dashboard(req, res, next) {
   try {
-    const [stats, leads] = await Promise.all([getPropertyDashboardStats(), listLeads()]);
+    let stats, leads;
+    try {
+      [stats, leads] = await Promise.all([getPropertyDashboardStats(), listLeads()]);
+    } catch (err) {
+      console.error('[ADMIN] Stats/leads query failed:', err instanceof Error ? err.message : String(err));
+      const error = new Error(`Dashboard data query failed — ${err instanceof Error ? err.message : String(err)}`);
+      error.status = 500;
+      throw error;
+    }
 
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const [visits30d, connectedLeads] = await Promise.all([
-      database.pageVisit.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
-      database.lead.count({ where: { status: { in: ['CONTACTED', 'QUALIFIED'] } } }),
-    ]);
+    let visits30d = 0, connectedLeads = 0;
+    try {
+      const results = await Promise.all([
+        database.pageVisit.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+        database.lead.count({ where: { status: { in: ['CONTACTED', 'QUALIFIED'] } } }),
+      ]);
+      visits30d = results[0];
+      connectedLeads = results[1];
+    } catch (err) {
+      console.warn('[ADMIN] Visit/lead count query failed (non-fatal):', err instanceof Error ? err.message : String(err));
+    }
 
     res.json({
       success: true,
@@ -20,7 +35,7 @@ export async function dashboard(req, res, next) {
           visits30d,
           connectedLeads,
         },
-        leads: leads.slice(0, 10),
+        leads: leads ? leads.slice(0, 10) : [],
       },
     });
   } catch (error) {
