@@ -5,6 +5,7 @@ import {
   setPropertyStatus,
   updateProperty,
 } from '../services/property.service.js';
+import { database } from '../config/database.js';
 
 function asString(value) {
   return Array.isArray(value) ? value[0] : value ?? '';
@@ -71,6 +72,50 @@ export async function unpublish(req, res, next) {
       return res.status(404).json({ success: false, message: 'Property not found.' });
     }
     res.json({ success: true, data, message: 'Property moved to draft.' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getMedia(req, res, next) {
+  try {
+    const identifier = asString(req.params.slug);
+    const property = await database.property.findFirst({
+      where: { OR: [{ id: identifier }, { slug: identifier }] },
+      select: { id: true, slug: true, title: true },
+    });
+    if (!property) {
+      return res.status(404).json({ success: false, message: 'Property not found.' });
+    }
+
+    const media = await database.propertyMedia.findMany({
+      where: { propertyId: property.id },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    const photos = media.filter((m) => m.type === 'image' || m.type.includes('image'));
+    const videos = media.filter((m) => m.type === 'video' || m.type.includes('video'));
+    const masterPlans = media.filter((m) => m.type === 'master-plan' || m.type === 'masterplan' || m.type.includes('master'));
+    const droneViews = media.filter((m) => m.type === 'drone' || m.type.includes('drone'));
+
+    const map = (items) => items.map((m) => ({
+      id: m.id,
+      propertyId: m.propertyId,
+      type: m.type,
+      url: m.url,
+      title: m.caption ?? '',
+      sortOrder: m.sortOrder,
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        photos: map(photos),
+        videos: map(videos),
+        masterPlans: map(masterPlans),
+        droneViews: map(droneViews),
+      },
+    });
   } catch (error) {
     next(error);
   }

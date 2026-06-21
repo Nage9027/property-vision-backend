@@ -8,6 +8,7 @@ import * as propertyController from '../controllers/property.controller.js';
 export const propertyRoutes = Router();
 
 propertyRoutes.get('/', propertyController.list);
+propertyRoutes.get('/media/:slug', propertyController.getMedia);
 propertyRoutes.get('/:id', optionalAuthMiddleware, propertyController.getById);
 propertyRoutes.post('/', authMiddleware, requireRole('ADMIN'), validateBody(propertyCreateSchema), propertyController.create);
 propertyRoutes.patch('/:id', authMiddleware, requireRole('ADMIN'), validateBody(propertyUpdateSchema), propertyController.update);

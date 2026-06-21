@@ -13,6 +13,7 @@ if (!process.env.REFRESH_JWT_SECRET) {
 export const env = {
   PORT: Number(process.env.PORT ?? 4000),
   DATABASE_URL: process.env.DATABASE_URL ?? '',
+  DIRECT_URL: process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? '',
   JWT_SECRET: jwtSecret ?? 'change-me',
   REFRESH_JWT_SECRET: refreshJwtSecret ?? 'change-me-refresh',
   CORS_ORIGIN: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
