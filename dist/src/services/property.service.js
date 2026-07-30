@@ -298,3 +298,31 @@ export async function updatePropertyPageHero(input) {
         });
     return serializeHero(hero);
 }
+
+export async function getAdminPropertyMedia(propertyId) {
+  const items = await database.propertyMedia.findMany({
+    where: { propertyId },
+    orderBy: { sortOrder: 'asc' },
+  });
+  return {
+    bannerImage: items.find((m) => m.type === 'banner-image') ?? null,
+    masterPlan: items.find((m) => m.type === 'master-plan' || m.type === 'masterplan') ?? null,
+    heroVideo: items.find((m) => m.type === 'video') ?? null,
+    galleryImages: items.filter((m) => m.type === 'image' || m.type === 'photo'),
+  };
+}
+
+export async function deletePropertyMedia(mediaId) {
+  return database.propertyMedia.delete({ where: { id: mediaId } });
+}
+
+export async function createPropertyMedia(propertyId, type, url, caption) {
+  const result = await database.propertyMedia.aggregate({
+    where: { propertyId },
+    _max: { sortOrder: true },
+  });
+  const nextOrder = (result._max.sortOrder ?? -1) + 1;
+  return database.propertyMedia.create({
+    data: { propertyId, type, url, caption: caption ?? null, sortOrder: nextOrder },
+  });
+}
