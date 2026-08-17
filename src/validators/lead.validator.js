@@ -8,3 +8,6 @@ export const leadSchema = z.object({
     whatsappOptIn: z.coerce.boolean().optional(),
     sourcePage: z.string().optional().nullable(),
 });
+export const leadUpdateSchema = z.object({
+    status: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'CLOSED']).optional(),
+});

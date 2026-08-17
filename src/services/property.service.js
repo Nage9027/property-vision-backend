@@ -110,24 +110,161 @@ async function replaceCollections(tx, propertyId, media, amenities) {
         }
     }
 }
-export async function listPublishedProperties() {
-    const properties = await database.property.findMany({
-        where: { status: 'PUBLISHED' },
-        orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
-        include: { media: true, amenities: true },
-    });
-    return properties.map(serializeProperty);
+function asString(value) {
+    if (Array.isArray(value))
+        return value[0];
+    return value == null ? '' : String(value);
 }
-export async function listAllProperties() {
-    const properties = await database.property.findMany({
-        orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
-        include: { media: true, amenities: true },
-    });
-    return properties.map(serializeProperty);
+function buildPropertyListWhere(query, includeHidden) {
+    const conditions = [];
+    const q = asString(query.q).trim();
+    if (q) {
+        conditions.push({
+            OR: [
+                { title: { contains: q, mode: 'insensitive' } },
+                { city: { contains: q, mode: 'insensitive' } },
+                { locality: { contains: q, mode: 'insensitive' } },
+                { district: { contains: q, mode: 'insensitive' } },
+                { propertyType: { contains: q, mode: 'insensitive' } },
+            ],
+        });
+    }
+    const city = asString(query.city);
+    if (city)
+        conditions.push({ city });
+    const district = asString(query.district);
+    if (district)
+        conditions.push({ district });
+    const type = asString(query.type);
+    if (type)
+        conditions.push({ propertyType: type });
+    const possession = asString(query.possession);
+    if (possession)
+        conditions.push({ possessionStatus: possession });
+    const status = asString(query.status);
+    if (status)
+        conditions.push({ status });
+    else if (!includeHidden)
+        conditions.push({ status: 'PUBLISHED' });
+    const bedrooms = Number(asString(query.bedrooms));
+    if (Number.isInteger(bedrooms) && bedrooms > 0)
+        conditions.push({ bedrooms });
+    const priceMin = Number(asString(query.priceMin));
+    if (!Number.isNaN(priceMin))
+        conditions.push({ price: { gte: priceMin } });
+    const priceMax = Number(asString(query.priceMax));
+    if (!Number.isNaN(priceMax))
+        conditions.push({ price: { lte: priceMax } });
+    return conditions.length ? { AND: conditions } : undefined;
+}
+function buildPropertyListOrder(query) {
+    switch (asString(query.sort)) {
+        case 'price-asc':
+            return [{ price: 'asc' }];
+        case 'price-desc':
+            return [{ price: 'desc' }];
+        case 'oldest':
+            return [{ createdAt: 'asc' }];
+        case 'title-asc':
+            return [{ title: 'asc' }];
+        case 'newest':
+        default:
+            return [{ featured: 'desc' }, { createdAt: 'desc' }];
+    }
+}
+async function queryProperties(query, includeHidden) {
+    const where = buildPropertyListWhere(query ?? {}, includeHidden);
+    const orderBy = buildPropertyListOrder(query ?? {});
+    const page = Math.max(1, Number.parseInt(asString(query?.page) || '1', 10) || 1);
+    const rawLimit = Number.parseInt(asString(query?.limit) || '', 10);
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(100, rawLimit) : null;
+    const [total, rows] = await Promise.all([
+        database.property.count({ where }),
+        database.property.findMany({
+            where,
+            orderBy,
+            include: { media: true, amenities: true },
+            ...(limit ? { skip: (page - 1) * limit, take: limit } : {}),
+        }),
+    ]);
+    const data = rows.map(serializeProperty);
+    return {
+        data,
+        meta: {
+            total,
+            page,
+            limit,
+            totalPages: limit ? Math.max(1, Math.ceil(total / limit)) : 1,
+        },
+    };
+}
+export async function listPublishedProperties(query = {}) {
+    return queryProperties(query, false);
+}
+export async function listAllProperties(query = {}) {
+    return queryProperties(query, true);
 }
 export async function getPropertyByIdentifier(identifier, includeHidden = false) {
     const property = await findPropertyRecord(identifier, includeHidden);
     return property ? serializeProperty(property) : null;
+}
+function buildScalarFields(input) {
+    const trim = (v) => (v === undefined || v === null || v === '' ? null : String(v).trim());
+    const undefOrTrim = (v) => (v === undefined ? undefined : trim(v));
+    const undefOrJson = (v) => (v === undefined ? undefined : v ?? null);
+    return {
+        locality: undefOrTrim(input.locality),
+        address: undefOrTrim(input.address),
+        propertyType: undefOrTrim(input.propertyType),
+        description: undefOrTrim(input.description),
+        possessionStatus: undefOrTrim(input.possessionStatus),
+        isHomepageHero: input.isHomepageHero === undefined ? undefined : Boolean(input.isHomepageHero),
+        heroTitle: undefOrTrim(input.heroTitle),
+        heroSubtitle: undefOrTrim(input.heroSubtitle),
+        heroDescription: undefOrTrim(input.heroDescription),
+        heroVideoUrl: undefOrTrim(input.heroVideoUrl),
+        heroImageUrl: undefOrTrim(input.heroImageUrl),
+        startingPrice: undefOrTrim(input.startingPrice),
+        priceUnit: undefOrTrim(input.priceUnit),
+        offerBadge: undefOrTrim(input.offerBadge),
+        priceHighlight: undefOrTrim(input.priceHighlight),
+        district: undefOrTrim(input.district),
+        state: undefOrTrim(input.state),
+        googleMapUrl: undefOrTrim(input.googleMapUrl),
+        landmark: undefOrTrim(input.landmark),
+        totalPlots: undefOrTrim(input.totalPlots),
+        availableUnits: undefOrTrim(input.availableUnits),
+        distanceToORR: undefOrTrim(input.distanceToORR),
+        internalRoadWidth: undefOrTrim(input.internalRoadWidth),
+        btn1Label: undefOrTrim(input.btn1Label),
+        btn1Type: undefOrTrim(input.btn1Type),
+        btn1Url: undefOrTrim(input.btn1Url),
+        btn2Label: undefOrTrim(input.btn2Label),
+        btn2Type: undefOrTrim(input.btn2Type),
+        btn2Url: undefOrTrim(input.btn2Url),
+        btn3Label: undefOrTrim(input.btn3Label),
+        btn3Type: undefOrTrim(input.btn3Type),
+        btn3Url: undefOrTrim(input.btn3Url),
+        whatsappNumber: undefOrTrim(input.whatsappNumber),
+        phoneNumber: undefOrTrim(input.phoneNumber),
+        metaTitle: undefOrTrim(input.metaTitle),
+        metaDescription: undefOrTrim(input.metaDescription),
+        ogImageUrl: undefOrTrim(input.ogImageUrl),
+        keywords: undefOrTrim(input.keywords),
+        homepageStatus: undefOrTrim(input.homepageStatus),
+        expectedROI: undefOrTrim(input.expectedROI),
+        seoTitle: undefOrTrim(input.seoTitle),
+        seoDescription: undefOrTrim(input.seoDescription),
+        investmentOverview: undefOrJson(input.investmentOverview),
+        investmentBenefits: undefOrJson(input.investmentBenefits),
+        locationAdvantages: undefOrJson(input.locationAdvantages),
+        testimonials: undefOrJson(input.testimonials),
+        faqs: undefOrJson(input.faqs),
+        siteVisitBenefits: undefOrJson(input.siteVisitBenefits),
+        contactInformation: undefOrJson(input.contactInformation),
+        footerInformation: undefOrJson(input.footerInformation),
+        customSections: undefOrJson(input.customSections),
+    };
 }
 export async function createProperty(input) {
     const slug = await ensureUniqueSlug(input.title);
@@ -137,17 +274,13 @@ export async function createProperty(input) {
                 title: input.title.trim(),
                 slug,
                 city: input.city.trim(),
-                locality: input.locality?.trim() || null,
-                address: input.address?.trim() || null,
                 price: toDecimal(input.price),
-                propertyType: input.propertyType?.trim() || null,
                 status: input.status ?? 'DRAFT',
-                description: input.description?.trim() || null,
                 featured: input.featured ?? false,
                 bedrooms: input.bedrooms ?? null,
                 bathrooms: input.bathrooms ?? null,
                 area: input.area ?? null,
-                possessionStatus: input.possessionStatus?.trim() || null,
+                ...buildScalarFields(input),
             },
         });
         await replaceCollections(tx, created.id, input.media, input.amenities);
@@ -167,17 +300,13 @@ export async function updateProperty(identifier, input) {
             data: {
                 title: input.title?.trim(),
                 city: input.city?.trim(),
-                locality: input.locality === undefined ? undefined : input.locality?.trim() || null,
-                address: input.address === undefined ? undefined : input.address?.trim() || null,
                 price: input.price === undefined ? undefined : toDecimal(input.price),
-                propertyType: input.propertyType === undefined ? undefined : input.propertyType?.trim() || null,
                 status: input.status,
-                description: input.description === undefined ? undefined : input.description?.trim() || null,
                 featured: input.featured,
                 bedrooms: input.bedrooms === undefined ? undefined : input.bedrooms,
                 bathrooms: input.bathrooms === undefined ? undefined : input.bathrooms,
                 area: input.area === undefined ? undefined : input.area,
-                possessionStatus: input.possessionStatus === undefined ? undefined : input.possessionStatus?.trim() || null,
+                ...buildScalarFields(input),
             },
         });
         await replaceCollections(tx, existing.id, input.media, input.amenities);
@@ -198,6 +327,16 @@ export async function setPropertyStatus(identifier, status) {
         include: { media: true, amenities: true },
     });
     return serializeProperty(updated);
+}
+export async function deleteProperty(identifier) {
+    const property = await database.property.findFirst({
+        where: { OR: [{ id: identifier }, { slug: identifier }] },
+        select: { id: true },
+    });
+    if (!property)
+        return null;
+    await database.property.delete({ where: { id: property.id } });
+    return { id: property.id };
 }
 export async function getPropertyDashboardStats() {
     const [total, published, draft, heroCount, leadCount] = await Promise.all([

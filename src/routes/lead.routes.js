@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { requireRole } from '../middleware/role.middleware.js';
 import { validateBody } from '../middleware/validate.middleware.js';
-import { leadSchema } from '../validators/lead.validator.js';
-import { createLead, listLeads } from '../services/lead.service.js';
+import { leadSchema, leadUpdateSchema } from '../validators/lead.validator.js';
+import { createLead, listLeads, updateLead } from '../services/lead.service.js';
 export const leadRoutes = Router();
 leadRoutes.post('/', validateBody(leadSchema), async (req, res, next) => {
     try {
@@ -18,6 +18,18 @@ leadRoutes.get('/', authMiddleware, requireRole('ADMIN'), async (_req, res, next
     try {
         const data = await listLeads();
         res.json({ success: true, data });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+leadRoutes.patch('/:id', authMiddleware, requireRole('ADMIN'), validateBody(leadUpdateSchema), async (req, res, next) => {
+    try {
+        const data = await updateLead(req.params.id, req.body);
+        if (!data) {
+            return res.status(404).json({ success: false, message: 'Lead not found.' });
+        }
+        res.json({ success: true, data, message: 'Lead updated successfully.' });
     }
     catch (error) {
         next(error);

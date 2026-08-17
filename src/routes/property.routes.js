@@ -3,15 +3,15 @@ import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth.middl
 import { requireRole } from '../middleware/role.middleware.js';
 import { validateBody } from '../middleware/validate.middleware.js';
 import { propertyCreateSchema, propertyUpdateSchema } from '../validators/property.validator.js';
-import { createProperty, getPropertyByIdentifier, getPropertyMedia, listPublishedProperties, setPropertyStatus, updateProperty, } from '../services/property.service.js';
+import { createProperty, deleteProperty, getPropertyByIdentifier, getPropertyMedia, listPublishedProperties, setPropertyStatus, updateProperty, } from '../services/property.service.js';
 export const propertyRoutes = Router();
 function asString(value) {
     return Array.isArray(value) ? value[0] : value ?? '';
 }
-propertyRoutes.get('/', async (_req, res, next) => {
+propertyRoutes.get('/', async (req, res, next) => {
     try {
-        const data = await listPublishedProperties();
-        res.json({ success: true, data });
+        const data = await listPublishedProperties(req.query);
+        res.json({ success: true, data: data.data, meta: data.meta });
     }
     catch (error) {
         next(error);
@@ -81,6 +81,18 @@ propertyRoutes.post('/:id/unpublish', authMiddleware, requireRole('ADMIN'), asyn
             return res.status(404).json({ success: false, message: 'Property not found.' });
         }
         res.json({ success: true, data, message: 'Property moved to draft.' });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+propertyRoutes.delete('/:id', authMiddleware, requireRole('ADMIN'), async (req, res, next) => {
+    try {
+        const data = await deleteProperty(asString(req.params.id));
+        if (!data) {
+            return res.status(404).json({ success: false, message: 'Property not found.' });
+        }
+        res.json({ success: true, data, message: 'Property deleted successfully.' });
     }
     catch (error) {
         next(error);

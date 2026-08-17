@@ -15,3 +15,14 @@ export async function createLead(input) {
 export async function listLeads() {
     return database.lead.findMany({ orderBy: { createdAt: 'desc' } });
 }
+export async function updateLead(id, input) {
+    const existing = await database.lead.findUnique({ where: { id } });
+    if (!existing)
+        return null;
+    if (input.status === undefined)
+        return existing;
+    return database.lead.update({
+        where: { id },
+        data: { status: input.status },
+    });
+}
