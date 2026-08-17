@@ -146,14 +146,17 @@ function buildPropertyListWhere(query, includeHidden) {
         conditions.push({ status });
     else if (!includeHidden)
         conditions.push({ status: 'PUBLISHED' });
-    const bedrooms = Number(asString(query.bedrooms));
-    if (Number.isInteger(bedrooms) && bedrooms > 0)
+    const bedroomsRaw = asString(query.bedrooms);
+    const bedrooms = Number(bedroomsRaw);
+    if (bedroomsRaw !== '' && Number.isInteger(bedrooms) && bedrooms > 0)
         conditions.push({ bedrooms });
-    const priceMin = Number(asString(query.priceMin));
-    if (!Number.isNaN(priceMin))
+    const priceMinRaw = asString(query.priceMin);
+    const priceMin = Number(priceMinRaw);
+    if (priceMinRaw !== '' && !Number.isNaN(priceMin))
         conditions.push({ price: { gte: priceMin } });
-    const priceMax = Number(asString(query.priceMax));
-    if (!Number.isNaN(priceMax))
+    const priceMaxRaw = asString(query.priceMax);
+    const priceMax = Number(priceMaxRaw);
+    if (priceMaxRaw !== '' && !Number.isNaN(priceMax))
         conditions.push({ price: { lte: priceMax } });
     return conditions.length ? { AND: conditions } : undefined;
 }
