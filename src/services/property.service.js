@@ -25,17 +25,68 @@ function serializeProperty(property) {
         possessionStatus: property.possessionStatus,
         createdAt: property.createdAt,
         updatedAt: property.updatedAt,
-        media: property.media
+        media: (property.media ?? [])
             .slice()
-            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
             .map((media) => ({
-            id: media.id,
-            type: media.type,
-            url: media.url,
-            caption: media.caption,
-            sortOrder: media.sortOrder,
-        })),
-        amenities: property.amenities.map((amenity) => amenity.name),
+                id: media.id,
+                type: media.type,
+                url: media.url,
+                caption: media.caption,
+                sortOrder: media.sortOrder,
+            })),
+        amenities: Array.isArray(property.amenities)
+            ? property.amenities.map((amenity) => amenity.name)
+            : typeof property.amenities === 'string'
+                ? [property.amenities]
+                : [],
+        district: property.district,
+        state: property.state,
+        landmark: property.landmark,
+        googleMapUrl: property.googleMapUrl,
+        totalPlots: property.totalPlots,
+        availableUnits: property.availableUnits,
+        distanceToORR: property.distanceToORR,
+        internalRoadWidth: property.internalRoadWidth,
+        expectedROI: property.expectedROI,
+        phoneNumber: property.phoneNumber,
+        whatsappNumber: property.whatsappNumber,
+        email: property.email,
+        investmentOverview: property.investmentOverview ?? null,
+        investmentBenefits: property.investmentBenefits ?? null,
+        locationAdvantages: property.locationAdvantages ?? null,
+        testimonials: property.testimonials ?? null,
+        faqs: property.faqs ?? null,
+        siteVisitBenefits: property.siteVisitBenefits ?? null,
+        contactInformation: property.contactInformation ?? null,
+        footerInformation: property.footerInformation ?? null,
+        customSections: property.customSections ?? null,
+        isHomepageHero: property.isHomepageHero,
+        heroTitle: property.heroTitle,
+        heroSubtitle: property.heroSubtitle,
+        heroDescription: property.heroDescription,
+        heroVideoUrl: property.heroVideoUrl,
+        heroImageUrl: property.heroImageUrl,
+        startingPrice: property.startingPrice,
+        priceUnit: property.priceUnit,
+        offerBadge: property.offerBadge,
+        priceHighlight: property.priceHighlight,
+        btn1Label: property.btn1Label,
+        btn1Type: property.btn1Type,
+        btn1Url: property.btn1Url,
+        btn2Label: property.btn2Label,
+        btn2Type: property.btn2Type,
+        btn2Url: property.btn2Url,
+        btn3Label: property.btn3Label,
+        btn3Type: property.btn3Type,
+        btn3Url: property.btn3Url,
+        metaTitle: property.metaTitle,
+        metaDescription: property.metaDescription,
+        ogImageUrl: property.ogImageUrl,
+        keywords: property.keywords,
+        homepageStatus: property.homepageStatus,
+        seoTitle: property.seoTitle,
+        seoDescription: property.seoDescription,
     };
 }
 function serializeHero(hero) {
@@ -77,8 +128,8 @@ async function findPropertyRecord(identifier, includeHidden = false) {
         },
     });
 }
-async function buildPropertyRecord(id) {
-    return database.property.findUnique({
+async function buildPropertyRecord(id, client = database) {
+    return client.property.findUnique({
         where: { id },
         include: {
             media: true,
@@ -287,7 +338,7 @@ export async function createProperty(input) {
             },
         });
         await replaceCollections(tx, created.id, input.media, input.amenities);
-        return buildPropertyRecord(created.id);
+        return buildPropertyRecord(created.id, tx);
     });
     if (!property)
         throw new Error('Failed to create property.');
@@ -313,7 +364,7 @@ export async function updateProperty(identifier, input) {
             },
         });
         await replaceCollections(tx, existing.id, input.media, input.amenities);
-        return buildPropertyRecord(existing.id);
+        return buildPropertyRecord(existing.id, tx);
     });
     return property ? serializeProperty(property) : null;
 }

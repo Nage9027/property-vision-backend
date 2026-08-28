@@ -20,8 +20,8 @@ adminRoutes.get('/dashboard', authMiddleware, requireRole('ADMIN'), async (_req,
 });
 adminRoutes.get('/properties', authMiddleware, requireRole('ADMIN'), async (_req, res, next) => {
     try {
-        const data = await listAllProperties();
-        res.json({ success: true, data });
+        const result = await listAllProperties();
+        res.json({ success: true, data: result.data });
     }
     catch (error) {
         next(error);

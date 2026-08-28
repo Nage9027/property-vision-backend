@@ -18,11 +18,18 @@ router.get('/property/:propertyId', async (req, res, next) => {
 router.get('/property/:propertyId/summary', async (req, res, next) => {
     try {
         const plots = await database.plot.findMany({ where: { propertyId: req.params.propertyId } });
+        const facingDistribution = {};
+        for (const p of plots) {
+            if (p.facing) facingDistribution[p.facing] = (facingDistribution[p.facing] || 0) + 1;
+        }
         const summary = {
             total: plots.length,
             available: plots.filter(p => p.status === 'AVAILABLE').length,
             sold: plots.filter(p => p.status === 'SOLD').length,
             reserved: plots.filter(p => p.status === 'RESERVED').length,
+            facingDistribution,
+            commercialFacingPlots: plots.filter(p => p.isCommercialFacing).length,
+            parkFacingPlots: plots.filter(p => p.isParkFacing).length,
         };
         res.json({ success: true, data: summary });
     } catch (err) { next(err); }
